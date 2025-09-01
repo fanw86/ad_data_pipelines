@@ -18,10 +18,12 @@ Instead of complex streaming/sampling approaches, we:
 
 ```
 data_ingestion/
-├── pg_import.R          # Core import function: import_csv_simple()
-├── db_config.r          # Database connection parameters
-├── import_data.R        # Test runner / example usage
-└── README_APPROACH.md   # This documentation
+├── pg_import.R           # Core import function: import_csv_simple()
+├── db_config.r           # Database connection parameters
+├── import_data.R         # Single file import example
+├── folder_import.R       # Folder walk-through functions
+├── run_folder_import.R   # Simple runner for folder imports
+└── README_APPROACH.md    # This documentation
 ```
 
 ## Key Components
@@ -136,15 +138,59 @@ rows_imported <- import_csv_simple(
 - **Memory requirement**: ~3x CSV file size (for processing overhead)
 - **Network efficient**: Chunked uploads with retry
 
+### 4. Folder Import System
+
+**Location:** `folder_import.R`
+
+**Main Function:**
+```r
+import_csv_folder(data_folder, upload_chunk_size = 100000, 
+                 enable_compression = TRUE, skip_imported = TRUE)
+```
+
+**Features:**
+- **Subfolder processing**: Each subfolder becomes a table name
+- **Success markers**: `.imported` files track completed imports
+- **Incremental imports**: Skip already processed files
+- **Comprehensive reporting**: Detailed success/failure tracking
+- **Error resilience**: Failed files don't stop the process
+
+**Expected Folder Structure:**
+```
+data_to_upload/
+├── ods_afc_validation_details/
+│   ├── afc-data-2025-jul.csv
+│   └── afc-data-2025-jul.imported    # Auto-created success marker
+├── ods_avm_trips/
+│   ├── avm_trips_2025_jul.csv
+│   └── avm_trips_2025_jul.imported   # Auto-created success marker
+└── dim_routes/
+    └── routes_master.csv
+```
+
+**Usage:**
+```r
+# Simple usage
+source('./data_ingestion/folder_import.R')
+results <- import_data_folder()
+
+# Custom settings
+results <- import_csv_folder(
+  data_folder = "./my_data",
+  upload_chunk_size = 50000,
+  enable_compression = TRUE,
+  skip_imported = FALSE  # Force re-import
+)
+```
+
 ## Future Enhancements
 
 Potential improvements (not currently needed):
 
-1. **Folder walking**: Process multiple CSVs in subfolders
-2. **Success markers**: Skip already-imported files
-3. **Streaming version**: For files larger than available RAM
-4. **Parallel uploads**: Multiple connections for very large datasets
-5. **Schema comparison**: Detect schema changes between imports
+1. **Streaming version**: For files larger than available RAM
+2. **Parallel uploads**: Multiple connections for very large datasets
+3. **Schema comparison**: Detect schema changes between imports
+4. **Recursive folder processing**: Handle nested subfolder structures
 
 ## Maintenance Notes
 
